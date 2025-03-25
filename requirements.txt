@@ -1,0 +1,9 @@
+gunicorn
+Flask
+requests
+opentelemetry-api
+opentelemetry-sdk
+opentelemetry-exporter-otlp
+opentelemetry-distro
+opentelemetry-instrumentation-flask
+flask-openapi3[swagger,redoc,rapidoc,rapipdf,scalar,elements]

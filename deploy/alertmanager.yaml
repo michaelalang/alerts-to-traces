@@ -1,0 +1,50 @@
+global:
+  resolve_timeout: 5m
+inhibit_rules:
+  - equal:
+      - namespace
+      - alertname
+    source_matchers:
+      - severity = critical
+    target_matchers:
+      - severity =~ warning|info
+  - equal:
+      - namespace
+      - alertname
+    source_matchers:
+      - severity = warning
+    target_matchers:
+      - severity = info
+  - equal:
+      - namespace
+    source_matchers:
+      - alertname = InfoInhibitor
+    target_matchers:
+      - severity = info
+receivers:
+  - name: Critical
+    webhook_configs:
+      - url: 'http://alert-receiver.${NAMESPACE}.svc.cluster.local:8080/webhook/alert-receiver'
+  - name: Default
+    webhook_configs:
+      - url: 'http://alert-receiver.${NAMESPACE}.svc.cluster.local:8080/webhook/alert-receiver'
+  - name: 'null'
+  - name: Watchdog
+route:
+  group_by:
+    - namespace
+  group_interval: 5m
+  group_wait: 30s
+  receiver: Default
+  repeat_interval: 12h
+  routes:
+    - matchers:
+        - alertname = Watchdog
+      receiver: Watchdog
+    - matchers:
+        - alertname = InfoInhibitor
+      receiver: 'null'
+    - receiver: Critical
+      matchers:
+        - severity = critical
+

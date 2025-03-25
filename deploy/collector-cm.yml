@@ -1,0 +1,98 @@
+apiVersion: v1
+data:
+  collector.yml: |-
+  receivers:
+    otlp:
+      protocols:
+        grpc:
+          endpoint: 127.0.0.1:4317
+    syslog:
+      udp:
+        listen_address: 127.0.0.1:50514
+      protocol: rfc5424
+      operators:
+        - type: move
+          from: attributes.message
+          to: body
+        - type: move
+          from: attributes.appname
+          to: attributes.application
+          on_error: send_quiet
+        - type: regex_parser
+          regex: \#\d{2}\-(?P<trace_id>.{32})\-(?P<span_id>.{16})\-(?P<trace_flags>\d{2})$
+          on_error: send_quiet
+          trace:
+            trace_id:
+              parse_from: attributes.trace_id
+            span_id:
+              parse_from: attributes.span_id
+            trace_flags:
+              parse_from: attributes.trace_flags
+        - type: regex_parser
+          regex: ^(?<body>.+?)(\#\d{2}\-.{32}\-.{16}\-\d{2}$|$)
+          parse_from: body
+          on_error: send_quiet
+        - type: move
+          from: attributes.body
+          to: body
+          on_error: send_quiet
+  exporters:
+    debug:
+      verbosity: detailed
+      sampling_initial: 5
+      sampling_thereafter: 200
+    otlp/tempo:
+      auth:
+        authenticator: bearertokenauth
+      endpoint: tempo-tempo-gateway.tempo.svc.cluster.local:8090
+      tls:
+        ca_file: /var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt
+      headers:
+        X-Scope-OrgID: user
+  connectors:
+    spanmetrics:
+      dimensions:
+        - name: k8s.namespace.name
+      metrics_flush_interval: 5s
+  extensions:
+    bearertokenauth:
+      filename: /var/run/secrets/kubernetes.io/serviceaccount/token
+  processors:
+    k8sattributes: {}
+    filter:
+      error_mode: ignore
+      traces:
+        span:
+          - status.code != 2
+    batch: null
+    memory_limiter:
+      check_interval: 1s
+      limit_mib: 1000
+      spike_limit_percentage: 10
+  service:
+    extensions:
+      - bearertokenauth
+    telemetry:
+      logs:
+        level: info
+    pipelines:
+      logs:
+        receivers:
+          - syslog
+        processors:
+          - memory_limiter
+          - batch
+        exporters:
+          - debug
+      traces:
+        receivers:
+          - otlp
+        processors:
+          - memory_limiter
+          - batch
+        exporters:
+          - debug
+          - otlp/tempo
+kind: ConfigMap
+metadata:
+  name: collector
