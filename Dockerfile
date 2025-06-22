@@ -25,8 +25,9 @@ COPY --from=builder /output /
 # should be included but Fedora41 does not provide buildinfo
 #COPY --from=base /root/buildinfo /root/buildinfo
 COPY app.py /opt/app/app.py
+COPY a2t /opt/app/a2t
 
 USER 1001
 WORKDIR /opt/app
 ENTRYPOINT [ "/usr/bin/gunicorn" ]
-CMD [ "--pythonpath", "/usr/bin/python3.13", "--bind", "0.0.0.0:8080", "app:app" ]
+CMD [ "--pythonpath", "/usr/bin/python3.13", "--bind", "0.0.0.0:8080", "app:app_factory", "--worker-class", "aiohttp.GunicornWebWorker", "--access-logfile", "-"]

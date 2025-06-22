@@ -63,3 +63,35 @@ address as well.
     oc -n openshift-monitoring replace -f -
     ```
 
+## Test the deployment
+
+```
+oc -n ${NAMESPACE} port-forward service/alert-receiver 8080:8080 & 
+
+curl -X POST -d @alert.json \
+  -H "Content-Type: application/json" 
+  localhost:8080/webhook/alert-receiver
+ -v -H "x-forwarded-for: 10.11.12.13"
+```
+
+Example output
+```
+*   Trying 127.0.0.1:8080...
+* Connected to localhost (127.0.0.1) port 8080 (#0)
+> POST /webhook/alert-receiver HTTP/1.1
+> Host: localhost:8088
+> User-Agent: curl/7.76.1
+> Accept: */*
+> Content-Type: application/json
+> x-forwarded-for: 10.11.12.13
+> Content-Length: 8080
+> 
+* Mark bundle as not supporting multiuse
+< HTTP/1.1 201 Created
+< traceparent: 00-6ee609f90f8aa746acaf675e338b2e82-727434c82cb13d7d-01
+< Content-Length: 0
+< Date: Sun, 22 Jun 2025 08:15:46 GMT
+< Server: Python/3.13 aiohttp/3.12.13
+< 
+* Connection #0 to host localhost left intact
+```
