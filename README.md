@@ -3,6 +3,11 @@
 This small service provides the possibility to convert Alerts in OpenShift created by AlertManager in openshift-monitoring to traces and
 visualize them in the Observ -> Trace UI.
 
+![COO](screenshots/alerts-to-traces-COO.png)
+
+![Grafana](screenshots/alerts-to-traces.png)
+
+
 ## Requirements
 
 * OpenShift 4.16+ (tested on 16,17,18)
